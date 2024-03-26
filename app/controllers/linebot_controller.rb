@@ -9,7 +9,13 @@ class LinebotController < ApplicationController
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
-          message.push(button_template)
+          if event.message['text'] == 'はい' then
+            message.push(sticker)
+          elsif event.message['text'] == 'いいえ' then
+            message.push()
+          else
+            message.push(confirm_template)
+          end
         end
       end
       client.reply_message(event['replyToken'], message)
@@ -76,9 +82,38 @@ class LinebotController < ApplicationController
       }
     }
   end
+
+  def 
   
   def runteq_quiz_language
+    {
+      "type": "template",
+      "altText": "ランテックで学ぶメインの言語は？",
+      "template": {
+        "type": "confirm",
+        "text": "ランテックで学ぶメインの言語は？",
+        "actions": [
+          {
+            "type": "message",
+            "label": "Ruby",
+            "text": "Ruby"
+          },
+          {
+            "type": "message",
+            "label": "いいえ",
+            "text": "いいえ"
+          }
+        ]
+      }
+    }
+  end
 
+  def sticker
+    {
+      "type": "sticker",
+      "packageId": "11537",
+      "stickerId": "52002734"
+    }
   end
 
   def runteq_quiz_runteq
@@ -104,13 +139,13 @@ class LinebotController < ApplicationController
         "actions": [
           {
             "type": "postback",
-            "label": "Buy",
-            "data": "action=buy&itemid=123"
+            "label": "Ruby",
+            "data": "action=correct&quizid=1"
           },
           {
             "type": "postback",
-            "label": "Add to cart",
-            "data": "action=add&itemid=123"
+            "label": "JS",
+            "data": "action=incorrect&quizid=1"
           },
           {
             "type": "uri",
