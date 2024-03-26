@@ -9,12 +9,13 @@ class LinebotController < ApplicationController
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
-          if event.message['text'] == 'はい' then
+          case event.message['text']
+          when 'クラッカー' then
             message.push(sticker)
-          elsif event.message['text'] == 'いいえ' then
-            message.push()
+          when 'らんてくん' then
+            message.push(runtequn_image)
           else
-            message.push(confirm_template)
+            message.push(parroting(event))
           end
         end
       end
@@ -82,8 +83,6 @@ class LinebotController < ApplicationController
       }
     }
   end
-
-  def 
   
   def runteq_quiz_language
     {
