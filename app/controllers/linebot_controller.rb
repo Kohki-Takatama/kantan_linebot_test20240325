@@ -9,12 +9,9 @@ class LinebotController < ApplicationController
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
-          message.push(parroting(event))
-          message.push(runtequn_image)
-          message.push(narou_api_ad)
+          message.push(button_template)
         end
       end
-      qiita_trend_api(event)
       client.reply_message(event['replyToken'], message)
     end
   end
@@ -40,39 +37,91 @@ class LinebotController < ApplicationController
 
     res = Net::HTTP.get_response(uri)
     novel = JSON.parse(res.body)
-    p novel
-    {type: 'text', text: "#{novel[1]['title']}\n\n#{novel[1]['story']}\n\n最終更新：#{novel[1]['general_lastup']}"}
+    {type: 'text', text: "#{novel[1]['title']}\n\n#{novel[1]['story']}"}
   end
 
-  def runteq_quiz_hisaju
+  def narou_api
+    uri = URI('https://api.syosetu.com/novelapi/api/')
+    params = {
+      out: 'json',
+      ncode: 'n8920ex',
+    }
+    uri.query = URI.encode_www_form(params)
+
+    res = Net::HTTP.get_response(uri)
+    novel = JSON.parse(res.body)
+    p novel
+    {type: 'text', text: "#{novel[1]['title']}\n\n最終更新：#{novel[1]['general_lastup']}"}
+  end
+
+  def confirm_template
+    {
+      "type": "template",
+      "altText": "これは確認テンプレートです",
+      "template": {
+        "type": "confirm",
+        "text": "本当に？",
+        "actions": [
+          {
+            "type": "message",
+            "label": "はい",
+            "text": "はい"
+          },
+          {
+            "type": "message",
+            "label": "いいえ",
+            "text": "いいえ"
+          }
+        ]
+      }
+    }
+  end
+  
+  def runteq_quiz_language
 
   end
 
   def runteq_quiz_runteq
   end
 
-  def confirm_message
+  def button_template
     {
       "type": "template",
-      "altText": "this is a confirm template",
+      "altText": "This is a buttons template",
       "template": {
-        "type": "confirm",
-        "text": "Are you sure?",
-        "actions": [
-        {
-          "type": "message",
-          "label": "Yes",
-          "text": "yes"
+        "type": "buttons",
+        "thumbnailImageUrl": "https://example.com/bot/images/image.jpg",
+        "imageAspectRatio": "rectangle",
+        "imageSize": "cover",
+        "imageBackgroundColor": "#FFFFFF",
+        "title": "Menu",
+        "text": "Please select",
+        "defaultAction": {
+          "type": "uri",
+          "label": "View detail",
+          "uri": "http://example.com/page/123"
         },
-        {
-          "type": "message",
-          "label": "No",
-          "text": "no"
-        }
-      ]
+        "actions": [
+          {
+            "type": "postback",
+            "label": "Buy",
+            "data": "action=buy&itemid=123"
+          },
+          {
+            "type": "postback",
+            "label": "Add to cart",
+            "data": "action=add&itemid=123"
+          },
+          {
+            "type": "uri",
+            "label": "View detail",
+            "uri": "http://example.com/page/123"
+          }
+        ]
+      }
     }
-  }
   end
+
 
   def image_carousel
   end
