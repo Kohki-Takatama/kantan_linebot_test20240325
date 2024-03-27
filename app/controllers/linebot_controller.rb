@@ -9,14 +9,17 @@ class LinebotController < ApplicationController
       when Line::Bot::Event::Message
         case event.type
         when Line::Bot::Event::MessageType::Text
-          case event.message['text']
-          when 'クラッカー' then
-            message.push(sticker)
-          when 'らんてくん' then
-            message.push(runtequn_image)
-          else
-            message.push(parroting(event))
-          end
+          message.push(next_quiz(0))
+        end
+      when Line::Bot::Event::Postback
+        data = Rack::Utils.parse_nested_query(event['postback']['data'])
+        case data['action']
+        when 'correct'
+          message.push(sticker_correct)
+          message.push(next_quiz(data['quizid'].to_i))
+        when 'incorrect'
+          message.push(sticker_incorrect)
+          message.push(next_quiz(data['quizid'].to_i - 1))
         end
       end
       client.reply_message(event['replyToken'], message)
@@ -25,116 +28,29 @@ class LinebotController < ApplicationController
 
   private
 
-  def parroting(event)
-    {type: 'text', text: event.message['text']}
+  def next_quiz(quizid)
+    p "----------"
+    p quizid
+    p "----------"
+    case quizid
+    when 0
+      quiz_runteq_language
+    when 1
+      quiz_runteq_spelling
+    when 2
+      {'type': 'text', 'text': '全問正解！'}
+    else
+      quiz_runteq_language
+    end
   end
 
-  def runtequn_image
-    runtequn = 'https://stickershop.line-scdn.net/stickershop/v1/product/18201714/LINEStorePC/main.png?v=1'
-    {type: 'image', originalContentUrl: runtequn, previewImageUrl: runtequn}
-  end
-
-  def narou_api_ad
-    uri = URI('https://api.syosetu.com/novelapi/api/')
-    params = {
-      out: 'json',
-      ncode: 'n8920ex',
-    }
-    uri.query = URI.encode_www_form(params)
-
-    res = Net::HTTP.get_response(uri)
-    novel = JSON.parse(res.body)
-    {type: 'text', text: "#{novel[1]['title']}\n\n#{novel[1]['story']}"}
-  end
-
-  def narou_api
-    uri = URI('https://api.syosetu.com/novelapi/api/')
-    params = {
-      out: 'json',
-      ncode: 'n8920ex',
-    }
-    uri.query = URI.encode_www_form(params)
-
-    res = Net::HTTP.get_response(uri)
-    novel = JSON.parse(res.body)
-    p novel
-    {type: 'text', text: "#{novel[1]['title']}\n\n最終更新：#{novel[1]['general_lastup']}"}
-  end
-
-  def confirm_template
+  def quiz_runteq_language
     {
       "type": "template",
-      "altText": "これは確認テンプレートです",
+      "altText": "第一問：ランテックで学ぶメインの言語は？",
       "template": {
         "type": "confirm",
-        "text": "本当に？",
-        "actions": [
-          {
-            "type": "message",
-            "label": "はい",
-            "text": "はい"
-          },
-          {
-            "type": "message",
-            "label": "いいえ",
-            "text": "いいえ"
-          }
-        ]
-      }
-    }
-  end
-  
-  def runteq_quiz_language
-    {
-      "type": "template",
-      "altText": "ランテックで学ぶメインの言語は？",
-      "template": {
-        "type": "confirm",
-        "text": "ランテックで学ぶメインの言語は？",
-        "actions": [
-          {
-            "type": "message",
-            "label": "Ruby",
-            "text": "Ruby"
-          },
-          {
-            "type": "message",
-            "label": "いいえ",
-            "text": "いいえ"
-          }
-        ]
-      }
-    }
-  end
-
-  def sticker
-    {
-      "type": "sticker",
-      "packageId": "11537",
-      "stickerId": "52002734"
-    }
-  end
-
-  def runteq_quiz_runteq
-  end
-
-  def button_template
-    {
-      "type": "template",
-      "altText": "This is a buttons template",
-      "template": {
-        "type": "buttons",
-        "thumbnailImageUrl": "https://example.com/bot/images/image.jpg",
-        "imageAspectRatio": "rectangle",
-        "imageSize": "cover",
-        "imageBackgroundColor": "#FFFFFF",
-        "title": "Menu",
-        "text": "Please select",
-        "defaultAction": {
-          "type": "uri",
-          "label": "View detail",
-          "uri": "http://example.com/page/123"
-        },
+        "text": "第一問：ランテックで学ぶメインの言語は？",
         "actions": [
           {
             "type": "postback",
@@ -143,37 +59,53 @@ class LinebotController < ApplicationController
           },
           {
             "type": "postback",
-            "label": "JS",
+            "label": "Java",
             "data": "action=incorrect&quizid=1"
-          },
-          {
-            "type": "uri",
-            "label": "View detail",
-            "uri": "http://example.com/page/123"
           }
         ]
       }
     }
   end
 
-
-  def image_carousel
-  end
-
-  def qiita_trend_api(event)
-    uri = URI('https://qiita-api.vercel.app/api/trend')
-    res = Net::HTTP.get_response(uri)
-    articles = JSON.parse(res.body)
-    message = []
-    # トレンド上位5記事のみ抽出
-    5.times {|i|
-      hash = {}
-      hash[:type] = "text"
-      hash[:text] = response[i]["node"]["linkUrl"]
-      message.push(hash)
+  def quiz_runteq_spelling
+    {
+      "type": "template",
+      "altText": "第二問：ランテックのつづりは？",
+      "template": {
+        "type": "confirm",
+        "text": "第二問：ランテックのつづりは？",
+        "actions": [
+          {
+            "type": "postback",
+            "label": "RANTEK",
+            "data": "action=incorrect&quizid=2"
+          },
+          {
+            "type": "postback",
+            "label": "RUNTEQ",
+            "data": "action=correct&quizid=2"
+          }
+        ]
+      }
     }
-    client.reply_message(event['replyToken'],  message)
   end
+
+  def sticker_correct
+    {
+      "type": "sticker",
+      "packageId": "11537",
+      "stickerId": "52002734"
+    }
+  end
+
+  def sticker_incorrect
+    {
+      'type': 'sticker',
+      'packageId': '789',
+      'stickerId': '10881'
+    }
+  end
+
 
   def client
     @client ||= Line::Bot::Client.new { |config|
